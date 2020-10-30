@@ -1,12 +1,19 @@
 package main
 
 import (
+	"errors"
+
 	coinbasepro "github.com/preichenberger/go-coinbasepro/v2"
 )
 
-func CreateOrder(options Options) {
-	println(options.Type)
+func CreateOrder(options Options) (err error) {
 	println("Order Created")
+
+	if(false) {
+		return errors.New("Some Error")
+	} else {
+		return
+	}
 }
 
 func ListOrders(options Options) {
