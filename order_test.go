@@ -1,64 +1,13 @@
 package main
 
 import (
-// 	"encoding/json"
 	"fmt"
-// 	"net/http"
-// 	"net/http/httptest"
-// 	"reflect"
+	"os"
+	"reflect"
 
 	"github.com/cucumber/godog"
+	"github.com/joho/godotenv"
 )
-
-// func (a *apiFeature) resetResponse(*godog.Scenario) {
-// 	a.resp = httptest.NewRecorder()
-// }
-
-// 	// handle panic
-// 	defer func() {
-// 		switch t := recover().(type) {
-// 		case string:
-// 			err = fmt.Errorf(t)
-// 		case error:
-// 			err = t
-// 		}
-// 	}()
-
-// 	switch endpoint {
-// 	case "/version":
-// 		getVersion(a.resp, req)
-// 	default:
-// 		err = fmt.Errorf("unknown endpoint: %s", endpoint)
-// 	}
-// 	return
-// }
-
-// func (a *apiFeature) theResponseCodeShouldBe(code int) error {
-// 	if code != a.resp.Code {
-// 		return fmt.Errorf("expected response code to be: %d, but actual is: %d", code, a.resp.Code)
-// 	}
-// 	return nil
-// }
-
-// func (a *apiFeature) theResponseShouldMatchJSON(body *godog.DocString) (err error) {
-// 	var expected, actual interface{}
-
-// 	// re-encode expected response
-// 	if err = json.Unmarshal([]byte(body.Content), &expected); err != nil {
-// 		return
-// 	}
-
-// 	// re-encode actual response too
-// 	if err = json.Unmarshal(a.resp.Body.Bytes(), &actual); err != nil {
-// 		return
-// 	}
-
-// 	// the matching may be adapted per different requirements.
-// 	if !reflect.DeepEqual(expected, actual) {
-// 		return fmt.Errorf("expected JSON does not match actual, %v vs. %v", expected, actual)
-// 	}
-// 	return nil
-// }
 
 func iCreateAnOrderRequest(orderType string) error {
 	options.Type = orderType
@@ -69,14 +18,103 @@ func iCreateAnOrderRequest(orderType string) error {
 func theResponseShouldBeSuccessful() error {
 	err := CreateOrder(options)
 	if err != nil {
-		return fmt.Errorf("expected successful response, instead got %v", err.Error())
+		return fmt.Errorf("expected successful response, instead got %v\n%+v\n", err.Error(), options)
 	}
 
 	return nil
 }
 
+func iSetTheOptionTo(option, value string) error {
+	v := reflect.ValueOf(&options).Elem().FieldByName(option)
+
+	if v.IsValid() {
+		v.SetString(value)
+
+		return nil
+	} else {
+		return fmt.Errorf("expected to set option \"%v\" to \"%v\", but \"%v\" is not a valid option", option, value, option)
+	}
+}
+
+type DepositCrypto struct {
+	Currency          string `json:"currency"`
+	Amount            string `json:"amount"`
+	CoinbaseAccountID string `json:"coinbase_account_id"`
+}
+
+type DepositCoinbase struct {
+	Currency          string `json:"currency"`
+	Amount            string `json:"amount"`
+	ID                string `json:"id"`
+}
+
+type PaymentMethod struct {
+	PaymentMethodID		string `json:"id"`
+	Type							string `json:"profile_id"`
+	Currency					string `json:"currency"`
+}
+
+func createDeposit(currency, amount string) {
+	newDepositCrypto := DepositCrypto{
+		Amount: 						amount,
+		Currency: 					currency,
+		CoinbaseAccountID:	os.Getenv("COINBASE_ACCOUNT_ID"),
+	}
+
+	client = NewClient()
+
+	var savedDeposit DepositCoinbase
+	_, err := client.Request("POST", "/deposits/coinbase-account", newDepositCrypto, &savedDeposit)
+	
+	if err != nil {
+		println("ERR", err.Error())
+		fmt.Errorf("could not deposit: %v", err.Error())
+	} else {
+		println("SUCC")
+		fmt.Printf("%+v", savedDeposit)
+	}
+}
+
+func createWithdrawal(currency, amount string) {
+	newDepositCrypto := DepositCrypto{
+		Amount: 						amount,
+		Currency: 					currency,
+		CoinbaseAccountID:	os.Getenv("COINBASE_ACCOUNT_ID"),
+	}
+
+	client = NewClient()
+
+	var savedDeposit DepositCoinbase
+	_, err := client.Request("POST", "/withdrawals/coinbase-account", newDepositCrypto, &savedDeposit)
+	
+	if err != nil {
+		println("ERR", err.Error())
+		fmt.Errorf("could not deposit: %v", err.Error())
+	} else {
+		println("SUCC")
+		fmt.Printf("%+v", savedDeposit)
+	}
+}
+
 func InitializeTestSuite(ctx *godog.TestSuiteContext) {
-	ctx.BeforeSuite(func() { options = Options{} })
+	ctx.BeforeSuite(func() {
+		options = Options{}
+
+		// var paymentMethods []PaymentMethod
+		// _, err := client.Request("GET", "/accounts", nil, &paymentMethods)
+
+		// if err != nil {
+		// 	println("ERR", err.Error())
+		// 	fmt.Errorf("could not deposit: %v", err.Error())
+		// } else {
+		// 	println("SUCC")
+		// 	fmt.Printf("%+v", paymentMethods)
+		// }
+
+		// createDeposit("BTC", "50.0")
+		createWithdrawal("BTC", "40.0")
+		// createDeposit("ETH", "500.0")
+	})
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
@@ -84,6 +122,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 		options = Options{} // reset the options before each scenario
 	})
 
-	ctx.Step(`^I create a "(market|limit)" order`, iCreateAnOrderRequest)
+	ctx.Step(`^I want to create a "(market|limit)" order`, iCreateAnOrderRequest)
+	ctx.Step(`^I set the "([^"]*)" option to "([^"]*)`, iSetTheOptionTo)
 	ctx.Step(`^the response should be successful`, theResponseShouldBeSuccessful)
 }
