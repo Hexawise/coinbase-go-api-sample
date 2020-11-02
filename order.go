@@ -57,7 +57,7 @@ func CreateLimitOrder(options Options) coinbasepro.Order {
 		Stp:					options.STP,
 		Stop:					options.Stop,
 		StopPrice:		options.StopPrice,
-		Price:				"0.100",
+		Price:				"0.10",
 		Size:					"1.00",
 		TimeInForce:	options.TimeInForce,
 		CancelAfter:	options.CancelAfter,
@@ -74,7 +74,7 @@ func CreateMarketOrder(options Options) coinbasepro.Order {
 		Stp:					options.STP,
 		Stop:					options.Stop,
 		StopPrice:		options.StopPrice,
-		Price:				"0.100",
+		Price:				"0.10",
 		Size:					"0.01",
 		Funds:				options.Funds,
 	}
