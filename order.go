@@ -28,24 +28,6 @@ func CreateOrder(options Options) error {
 	return nil
 }
 
-func ListOrders(options Options) {
-	var orders []coinbasepro.Order
-	cursor := client.ListOrders()
-
-	println("Orders:")
-
-	for cursor.HasMore {
-		if err := cursor.NextPage(&orders); err != nil {
-			println("Error:", err.Error())
-			return
-		}
-	
-		for _, o := range orders {
-			println(o.ID)
-		}
-	}
-}
-
 func CreateLimitOrder(options Options) coinbasepro.Order {
 	postOnly, _ := strconv.ParseBool(options.PostOnly)
 
